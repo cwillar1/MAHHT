@@ -1,104 +1,69 @@
 #include <iostream>
 #include <vector>
-#include <map>
 #include <cmath>
 #include <numeric>
-#include <string>
+#include <algorithm>
 
-// Hydrophobicity or custom nucleotide encoding
-std::map<char, double> encoding = {
-    {'A', 1.0}, {'C', 2.0}, {'G', 3.0}, {'T', 4.0} // Placeholder values
-};
+// Function to calculate the mean envelope of a signal
+std::vector<double> calculateMeanEnvelope(const std::vector<double>& signal) {
+    std::vector<double> upperEnvelope = signal;
+    std::vector<double> lowerEnvelope = signal;
+    std::vector<double> meanEnvelope(signal.size());
 
-// Simulated generations of a dynamic sequence
-std::vector<std::string> evolving_seq = {
-    "ACGTACGT", // Gen 1
-    "ACGTACGC", // Gen 2
-    "ACGTCCGC", // Gen 3
-    "ACTTCCGC"  // Gen 4
-};
+    // Simple approach: average the signal
+    double sum = std::accumulate(signal.begin(), signal.end(), 0.0);
+    double mean = sum / signal.size();
+    std::fill(meanEnvelope.begin(), meanEnvelope.end(), mean);
 
-// Static reference sequence to compare
-std::string static_ref = "ACGTTCGA";
-
-// Convert a sequence into numerical vector
-std::vector<double> encode(const std::string& seq) {
-    std::vector<double> result;
-    for (char base : seq)
-        result.push_back(encoding[base]);
-    return result;
+    return meanEnvelope;
 }
 
-// Compute moving average (low-frequency trend)
-std::vector<double> moving_average(const std::vector<double>& series, int window = 2) {
-    std::vector<double> result(series.size(), 0.0);
-    for (size_t i = 0; i < series.size(); ++i) {
-        int count = 0;
-        double sum = 0.0;
-        for (int j = -window; j <= window; ++j) {
-            if (i + j >= 0 && i + j < series.size()) {
-                sum += series[i + j];
-                count++;
+// Empirical Mode Decomposition (EMD)
+std::vector<std::vector<double>> emd(const std::vector<double>& signal, int maxIMF = 10) {
+    std::vector<std::vector<double>> imfs;
+    std::vector<double> residual = signal;
+
+    for (int i = 0; i < maxIMF; ++i) {
+        std::vector<double> h = residual;
+        int iteration = 0;
+        while (iteration < 10) { // Stopping criteria
+            std::vector<double> meanEnvelope = calculateMeanEnvelope(h);
+            for (size_t j = 0; j < h.size(); ++j) {
+                h[j] = h[j] - meanEnvelope[j];
             }
+            iteration++;
         }
-        result[i] = sum / count;
+        imfs.push_back(h);
+        for (size_t j = 0; j < residual.size(); ++j) {
+             residual[j] = residual[j] - h[j];
+        }
     }
-    return result;
+    return imfs;
 }
 
-// Subtract trend to get high-frequency IMF-like signal
-std::vector<double> detail_component(const std::vector<double>& original, const std::vector<double>& trend) {
-    std::vector<double> result(original.size());
-    for (size_t i = 0; i < original.size(); ++i)
-        result[i] = original[i] - trend[i];
-    return result;
+// Hilbert Transform
+std::vector<double> hilbertTransform(const std::vector<double>& signal) {
+    std::vector<double> analyticSignal(signal.size());
+    return analyticSignal;
 }
 
-// Compare two vectors using dot product similarity
-double similarity_score(const std::vector<double>& a, const std::vector<double>& b) {
-    double dot = 0, norm_a = 0, norm_b = 0;
-    for (size_t i = 0; i < a.size(); ++i) {
-        dot += a[i] * b[i];
-        norm_a += a[i] * a[i];
-        norm_b += b[i] * b[i];
-    }
-    return dot / (std::sqrt(norm_a) * std::sqrt(norm_b) + 1e-8);
+// Calculate Instantaneous Frequency
+std::vector<double> calculateInstantaneousFrequency(const std::vector<double>& analyticSignal, double sampleRate) {
+    std::vector<double> instantaneousFrequency(analyticSignal.size());
+    return instantaneousFrequency;
 }
 
 int main() {
-    int L = evolving_seq[0].size();
-    int G = evolving_seq.size();
+    // Example Usage
+    std::vector<double> signal = { /* Input signal data */ };
+    double sampleRate = 1.0;
 
-    // Create time series 
-    std::vector<std::vector<double>> position_series(L);
-    for (int pos = 0; pos < L; ++pos) {
-        for (int gen = 0; gen < G; ++gen) {
-            position_series[pos].push_back(encoding[evolving_seq[gen][pos]]);
-        }
+    std::vector<std::vector<double>> imfs = emd(signal);
+
+    for (const auto& imf : imfs) {
+        std::vector<double> analyticSignal = hilbertTransform(imf);
+        std::vector<double> instantaneousFrequency = calculateInstantaneousFrequency(analyticSignal, sampleRate);
+        // Process or store the instantaneous frequency
     }
-
-
-    std::vector<std::vector<double>> trends(L), details(L);
-    for (int i = 0; i < L; ++i) {
-        // (evolving signal)
-        trends[i] = moving_average(position_series[i]);
-        details[i] = detail_component(position_series[i], trends[i]);
-    }
-
-    // Encode static reference
-    std::vector<double> static_vec = encode(static_ref);
-    std::vector<double> static_trend = moving_average(static_vec);
-    std::vector<double> static_detail = detail_component(static_vec, static_trend);
-
-    // Compare each detail IMF (evolving signal) to static sequence slice
-    std::cout << "Similarity of dynamic evolution to static reference by position:\n";
-    for (int pos = 0; pos < L; ++pos) {
-
-        // Compare position's detail signal to corresponding static base (repeated across generations)
-        std::vector<double> static_series(G, static_vec[pos]);
-        double sim = similarity_score(details[pos], static_series);
-        std::cout << "Position " << pos << ": Similarity = " << sim << "\n";
-    }
-
     return 0;
 }
