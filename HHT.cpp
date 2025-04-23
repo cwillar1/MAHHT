@@ -93,11 +93,29 @@ std::vector<std::complex<double>> hilbertTransform(const std::vector<double>& si
 }
 
 // Calculate Instantaneous Frequency
-// Placeholder function for calculating instantaneous frequency
 std::vector<double> calculateInstantaneousFrequency(const std::vector<std::complex<double>>& analyticSignal, double sampleRate) {
-    std::vector<double> instantaneousFrequency(analyticSignal.size());
-    return instantaneousFrequency;
+    std::vector<double> instFreq;
+
+    for (size_t i = 1; i < analyticSignal.size(); ++i) {
+        double phase1 = std::arg(analyticSignal[i - 1]);
+        double phase2 = std::arg(analyticSignal[i]);
+
+        double dphi = phase2 - phase1;
+
+        // Phase unwrapping
+        if (dphi > M_PI) dphi -= 2 * M_PI;
+        if (dphi < -M_PI) dphi += 2 * M_PI;
+
+        double freq = (sampleRate / (2 * M_PI)) * dphi;
+        instFreq.push_back(freq);
+    }
+
+    // Pad the last sample to maintain the same size
+    instFreq.push_back(instFreq.back());
+
+    return instFreq;
 }
+
 
 int main() {
     // Example Usage
