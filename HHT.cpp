@@ -5,6 +5,7 @@
 #include <numeric>
 #include <algorithm>
 #include <complex>
+#include "signal_vectors.cpp"  
 
 // Function to calculate the mean envelope of a signal
 std::vector<double> calculateMeanEnvelope(const std::vector<double>& signal) {
@@ -118,8 +119,8 @@ std::vector<double> calculateInstantaneousFrequency(const std::vector<std::compl
 
 
 int main() {
-    // Example Usage
-    std::vector<double> signal = { /* Input signal data */ };
+    // No need to define 'signal' again here, just use it
+    std::vector<double> signal = ::signal;  // Access signal from signal_vectors.cpp
     double sampleRate = 1.0;
 
     std::vector<std::vector<double>> imfs = emd(signal);

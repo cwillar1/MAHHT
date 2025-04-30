@@ -4,12 +4,12 @@ CXXFLAGS = -std=c++17 -O2 -Wall
 TARGET = hht_sequence
 
 # Source files
-SRC = HHT.cpp
+SRC = HHT.cpp signal_vectors.cpp
 
 # Libraries
 LIBS = -lfftw3 -lm
 
-# Default target
+# Default target 
 all: $(TARGET)
 
 # Build the executable
@@ -18,6 +18,4 @@ $(TARGET): $(SRC)
 
 # Clean up build artifacts
 clean:
-	rm -f $(TARGET) 
-	rm -f *.o
-	rm -f *.dSYM
+	rm -f $(TARGET) *.o *.dSYM
