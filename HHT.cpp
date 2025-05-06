@@ -112,6 +112,11 @@ std::vector<double> calculateInstantaneousFrequency(const std::vector<std::compl
     }
 
     // Pad the last sample to maintain the same size
+    // This is a common practice to avoid size mismatch
+    // when using the instantaneous frequency in further processing
+    // The last frequency is usually the same as the second last
+    // This is a simple approach; more sophisticated methods can be used
+    // depending on the application
     instFreq.push_back(instFreq.back());
 
     return instFreq;
@@ -120,10 +125,39 @@ std::vector<double> calculateInstantaneousFrequency(const std::vector<std::compl
 
 int main() {
     // No need to define 'signal' again here, just use it
+    // from signal_vectors.cpp
     std::vector<double> signal = ::signal;  // Access signal from signal_vectors.cpp
     double sampleRate = 1.0;
 
     std::vector<std::vector<double>> imfs = emd(signal);
+    for (const auto& imf : imfs) {
+        std::cout << "IMF: ";
+        for (const auto& val : imf) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "Hilbert Transform and Instantaneous Frequency:" << std::endl;
+    for (const auto& imf : imfs) {
+        std::vector<std::complex<double>> analyticSignal = hilbertTransform(imf); 
+        std::cout << "Analytic Signal: ";
+        for (const auto& val : analyticSignal) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "Instantaneous Frequency:" << std::endl;
+    for (const auto& imf : imfs) {
+        std::vector<std::complex<double>> analyticSignal = hilbertTransform(imf); 
+        std::vector<double> instantaneousFrequency = calculateInstantaneousFrequency(analyticSignal, sampleRate);
+        std::cout << "Instantaneous Frequency: ";
+        for (const auto& freq : instantaneousFrequency) {
+            std::cout << freq << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "Final Instantaneous Frequency:" << std::endl;
+    
 
     for (const auto& imf : imfs) {
         std::vector<std::complex<double>> analyticSignal = hilbertTransform(imf); 
