@@ -6,7 +6,16 @@
 #include <unordered_map>
 #include <iomanip>
 #include <cctype>
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <complex>
 
+// USE ./signal_from_fasta myfile.fasta nucleotide > my_signal.txt
+// or ./signal_from_fasta myfile.fasta protein > my_signal.txt
+// This program reads a FASTA file and outputs a signal vector based on nucleotide or protein encoding.
+// The nucleotide encoding is based on a simple mapping of A, C, G, T/U to numbers.
+// The protein encoding uses the Kyte-Doolittle hydrophobicity scale.
 // Map for nucleotide encoding
 std::unordered_map<char, double> nucleotide_map = {
     {'A', 1.0}, {'C', 2.0}, {'G', 3.0}, {'T', 4.0}, {'U', 4.0}
@@ -33,14 +42,6 @@ std::vector<double> encode_sequence(const std::string& sequence, const std::stri
     return signal;
 }
 
-std::string sanitize_id(const std::string& id) {
-    std::string safe = id;
-    for (char& c : safe) {
-        if (!std::isalnum(c)) c = '_';
-    }
-    return safe;
-}
-
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: ./signal_from_fasta <file.fasta> <nucleotide|protein>\n";
@@ -62,19 +63,13 @@ int main(int argc, char* argv[]) {
     }
 
     std::string line, seq_id, sequence;
+
+    // Read the FASTA file line by line
     while (std::getline(infile, line)) {
         if (line.empty()) continue;
         if (line[0] == '>') {
             if (!sequence.empty()) {
-                std::vector<double> signal = encode_sequence(sequence, type);
-                std::string safe_id = sanitize_id(seq_id);
-                std::cout << "// " << seq_id << "\n";
-                std::cout << "std::vector<double> signal_" << safe_id << " = { ";
-                for (size_t i = 0; i < signal.size(); ++i) {
-                    std::cout << std::fixed << std::setprecision(3) << signal[i];
-                    if (i < signal.size() - 1) std::cout << ", ";
-                }
-                std::cout << " };\n\n";
+                // Only keep the last sequence
                 sequence.clear();
             }
             seq_id = line.substr(1);
@@ -83,17 +78,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Process last sequence
+    // Output the signal for the last sequence as a space-separated list
     if (!sequence.empty()) {
         std::vector<double> signal = encode_sequence(sequence, type);
-        std::string safe_id = sanitize_id(seq_id);
-        std::cout << "// " << seq_id << "\n";
-        std::cout << "std::vector<double> signal_" << safe_id << " = { ";
         for (size_t i = 0; i < signal.size(); ++i) {
-            std::cout << std::fixed << std::setprecision(3) << signal[i];
-            if (i < signal.size() - 1) std::cout << ", ";
+            std::cout << signal[i];
+            if (i < signal.size() - 1) std::cout << " ";
         }
-        std::cout << " };\n\n";
+        std::cout << std::endl;
     }
 
     return 0;
